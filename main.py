@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
-from BACKEND import models, crud, schemas
-from BACKEND.database import SessionLocal, engine
-from BACKEND.auth import get_current_user
+import models, crud, schemas
+from database import SessionLocal, engine
+from auth import get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
 
 models.Base.metadata.create_all(bind=engine)
