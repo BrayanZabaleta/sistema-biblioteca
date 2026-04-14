@@ -39,8 +39,7 @@ def listar_libros(
     """
 
 @app.get("/prestamos")
-def listar_prestamos(db: Session = Depends(get_db), user: str = Depends(get_current_user)):
-    solo_admin(user)
+def listar_prestamos(db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
     return crud.get_prestamos(db, user)
     """
     Permite listar todos los préstamos registrados en el sistema.
@@ -49,9 +48,8 @@ def listar_prestamos(db: Session = Depends(get_db), user: str = Depends(get_curr
     """
 
 @app.get("/devoluciones")
-def listar_devoluciones(db: Session = Depends(get_db), user: str = Depends(get_current_user)):
-    solo_admin(user)
-    return db.query(models.Devolucion).all()
+def listar_devoluciones(db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    return crud.get_devoluciones(db, user)
     """
     Permite listar todas las devoluciones registradas en el sistema.
     - Requiere autenticación
@@ -59,9 +57,8 @@ def listar_devoluciones(db: Session = Depends(get_db), user: str = Depends(get_c
     """
 
 @app.get("/multas")
-def listar_multas(db: Session = Depends(get_db), user: str = Depends(get_current_user)):
-    solo_admin(user)
-    return db.query(models.Multa).all()
+def listar_multas(db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    return crud.get_mis_multas(db, user)
     """
     Permite listar todas las multas registradas en el sistema.
     - Requiere autenticación
@@ -69,9 +66,8 @@ def listar_multas(db: Session = Depends(get_db), user: str = Depends(get_current
     """
 
 @app.get("/historial")
-def ver_historial(db: Session = Depends(get_db), user: str = Depends(get_current_user)):
-    solo_admin(user)
-    return db.query(models.Historial).all()
+def ver_historial(db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    return crud.get_mi_historial(db, user)
     """
     Permite ver el historial de actividades del usuario.
     - Requiere autenticación
@@ -95,7 +91,7 @@ def crear_libro(
 def crear_prestamo(
     prestamo: schemas.PrestamoBase, 
     db: Session = Depends(get_db), 
-    user: str = Depends(get_current_user)
+    user: dict = Depends(get_current_user)
     ):
     return crud.create_prestamo(db, prestamo, user)
     """
@@ -106,8 +102,8 @@ def crear_prestamo(
     """
 
 @app.post("/devoluciones", summary="Registrar devolución")
-def crear_devolucion(devolucion: schemas.DevolucionBase, db: Session = Depends(get_db), user: str = Depends(get_current_user)):
-    return crud.create_devolucion(db, devolucion)
+def crear_devolucion(devolucion: schemas.DevolucionBase, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    return crud.create_devolucion(db, devolucion, user)
     """
     Permite registrar una devolución de libro.
     - Actualiza estado del préstamo

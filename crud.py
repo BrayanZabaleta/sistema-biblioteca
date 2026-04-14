@@ -104,6 +104,7 @@ def create_devolucion(db: Session, devolucion: schemas.DevolucionBase, user: dic
 
     # historial devolución
     historial_dev = models.Historial(
+        id_usuario=usuario.id_usuario,
         id_libro=prestamo.id_libro,
         fecha=date.today(),
         accion="devolucion"
@@ -118,6 +119,7 @@ def create_devolucion(db: Session, devolucion: schemas.DevolucionBase, user: dic
 
     if dias_retraso > 0:
         multa = models.Multa(
+            id_usuario=usuario.id_usuario,
             id_devolucion=nueva.id_devoluciones,
             monto=dias_retraso * 1000,
             dias_retraso=dias_retraso,
@@ -188,3 +190,50 @@ def get_prestamos(db: Session, user: dict):
     else:
         return db.query(models.Prestamo).filter(models.Prestamo.id_usuario == usuario.id_usuario).all()
 
+def get_mis_multas(db: Session, user: dict):
+
+    usuario = db.query(models.Usuario).filter(
+        models.Usuario.username == user.get("username")
+    ).first()
+
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no existe")
+
+    if usuario.rol == "admin":
+        return db.query(models.Multa).all()
+    else:
+        return db.query(models.Multa).filter(
+            models.Multa.id_usuario == usuario.id_usuario
+        ).all()
+    
+def get_mi_historial(db: Session, user: dict):
+
+    usuario = db.query(models.Usuario).filter(
+        models.Usuario.username == user.get("username")
+    ).first()
+
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no existe")
+
+    if usuario.rol == "admin":
+        return db.query(models.Historial).all()
+    else:
+        return db.query(models.Historial).filter(
+            models.Historial.id_usuario == usuario.id_usuario
+        ).all()
+    
+def get_devoluciones(db: Session, user: dict):
+
+    usuario = db.query(models.Usuario).filter(
+        models.Usuario.username == user.get("username")
+    ).first()
+
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no existe")
+
+    if usuario.rol == "admin":
+        return db.query(models.Devolucion).all()
+    else:
+        return db.query(models.Devolucion).join(models.Prestamo).filter(
+            models.Prestamo.id_usuario == usuario.id_usuario
+        ).all()
