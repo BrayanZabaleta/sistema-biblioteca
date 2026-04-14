@@ -89,19 +89,21 @@ def create_devolucion(db: Session, devolucion: schemas.DevolucionBase):
     )
     db.add(historial_dev)
 
+    db.commit()  # commit para generar ID de devolución antes de calcular multa
+    db.refresh(nueva)
+
     # calcular multa
     dias_retraso = (devolucion.fecha_devolucion_real - prestamo.fecha_devolucion_estimada).days
 
     if dias_retraso > 0:
         multa = models.Multa(
-            id_devolucion=nueva.id_devoluciones,
+            id_devolucion=nueva.id_devolucion,
             monto=dias_retraso * 1000,
             dias_retraso=dias_retraso,
             estado="pendiente"
         )
         db.add(multa)
-        if dias_retraso < 0:
-            dias_retraso = 0
+    
         # historial multa
         historial_multa = models.Historial(
             id_libro=prestamo.id_libro,
