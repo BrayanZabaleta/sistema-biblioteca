@@ -31,7 +31,7 @@ def listar_libros(
     db: Session = Depends(get_db),
     user: str = Depends(get_current_user)
 ):
-    return db.query(models.Libro).all()
+    return crud.get_libros(db)       
     """
     Permite listar todos los libros disponibles en la biblioteca.
     - Requiere autenticación
