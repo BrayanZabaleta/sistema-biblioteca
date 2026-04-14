@@ -28,11 +28,10 @@ def get_db():
 # endpoint
 @app.get("/libros")
 def listar_libros(
-    db: Session = Depends(get_db), 
+    db: Session = Depends(get_db),
     user: str = Depends(get_current_user)
 ):
-    solo_admin(user)
-    return crud.get_libros(db, user)
+    return db.query(models.Libro).all()
     """
     Permite listar todos los libros disponibles en la biblioteca.
     - Requiere autenticación
