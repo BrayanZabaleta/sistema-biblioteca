@@ -184,11 +184,12 @@ def get_prestamos(db: Session, user: dict):
         models.Usuario.username == user.get("username")).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no existe")
-    
-    if usuario.rol == "admin":
+    if usuario.get("rol") == "admin":
         return db.query(models.Prestamo).all()
     else:
-        return db.query(models.Prestamo).filter(models.Prestamo.id_usuario == usuario.id_usuario).all()
+        return db.query(models.Prestamo).filter(
+            models.Prestamo.id_usuario == usuario.id_usuario
+        ).all()
 
 def get_mis_multas(db: Session, user: dict):
 
