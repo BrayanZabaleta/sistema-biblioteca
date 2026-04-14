@@ -35,3 +35,7 @@ def get_current_user(token: str = Depends(OAUTH2_SCHEME)):
 
     except JWTError:
         raise HTTPException(status_code=401, detail="Token inválido")
+    
+def solo_admin(user):
+       if user.get("rol") != "admin":
+            raise HTTPException(status_code=403, detail="No autorizado")

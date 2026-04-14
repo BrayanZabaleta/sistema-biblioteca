@@ -23,8 +23,13 @@ def create_libro(db: Session, libro: schemas.LibroBase):
     db.refresh(nuevo_libro)
     return nuevo_libro
 
-def create_prestamo(db: Session, prestamo: schemas.PrestamoBase):
+def create_prestamo(db: Session, prestamo: schemas.PrestamoBase, user: dict):
 
+    #buscar usuario
+    usuario = db.query(models.Usuario).filter(
+        models.Usuario.username == user.get("username")).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no existe")
     # buscar libro
     libro = db.query(models.Libro).filter(models.Libro.id_libro == prestamo.id_libro).first()
 
@@ -38,7 +43,13 @@ def create_prestamo(db: Session, prestamo: schemas.PrestamoBase):
         raise HTTPException(status_code=400, detail="Fecha inválida")
 
     # crear préstamo
-    nuevo = models.Prestamo(**prestamo.dict())
+    nuevo = models.Prestamo(
+        id_libro=prestamo.id_libro,
+        id_usuario=usuario.id_usuario,  
+        fecha_prestamo=prestamo.fecha_prestamo,
+        fecha_devolucion_estimada=prestamo.fecha_devolucion_estimada,
+        estado=prestamo.estado
+    )
     db.add(nuevo)
 
     # actualizar stock
@@ -46,6 +57,7 @@ def create_prestamo(db: Session, prestamo: schemas.PrestamoBase):
 
     # después de crear préstamo
     historial = models.Historial(
+        id_usuario=usuario.id_usuario,
         id_libro=prestamo.id_libro,
         fecha=date.today(),
         accion="prestamo"
@@ -57,7 +69,13 @@ def create_prestamo(db: Session, prestamo: schemas.PrestamoBase):
 
     return nuevo
 
-def create_devolucion(db: Session, devolucion: schemas.DevolucionBase):
+def create_devolucion(db: Session, devolucion: schemas.DevolucionBase, user: dict):
+
+    #buscar usuario
+    usuario = db.query(models.Usuario).filter(
+        models.Usuario.username == user.get("username")).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no existe")
 
     prestamo = db.query(models.Prestamo).filter(
         models.Prestamo.id_prestamo == devolucion.id_prestamo
@@ -67,6 +85,9 @@ def create_devolucion(db: Session, devolucion: schemas.DevolucionBase):
         raise HTTPException(status_code=404, detail="Prestamo no existe")
     if prestamo.estado == "devuelto":
         raise HTTPException(status_code=400, detail="Este préstamo ya fue devuelto")
+    
+    if prestamo.id_usuario != usuario.id_usuario:
+        raise HTTPException(status_code=403, detail="No autorizado para devolver este préstamo")
 
     libro = db.query(models.Libro).filter(
         models.Libro.id_libro == prestamo.id_libro
@@ -148,10 +169,22 @@ def login_user(db: Session, user: schemas.UsuarioLogin):
     if not db_user or not verify_password(user.password, db_user.password):
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
 
-    token = create_token({"sub": db_user.username})
+    token = create_token({"sub": db_user.username, "rol": db_user.rol})
 
     return {
         "access_token": token,
         "token_type": "bearer"
     }
+
+def get_prestamos(db: Session, user: dict):
+    #buscar usuario
+    usuario = db.query(models.Usuario).filter(
+        models.Usuario.username == user.get("username")).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no existe")
+    
+    if usuario.rol == "admin":
+        return db.query(models.Prestamo).all()
+    else:
+        return db.query(models.Prestamo).filter(models.Prestamo.id_usuario == usuario.id_usuario).all()
 

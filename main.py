@@ -1,9 +1,9 @@
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 import models, crud, schemas
 from database import SessionLocal, engine
-from auth import get_current_user
+from auth import get_current_user, solo_admin
 from fastapi.security import OAuth2PasswordRequestForm
 
 models.Base.metadata.create_all(bind=engine)
@@ -31,7 +31,8 @@ def listar_libros(
     db: Session = Depends(get_db), 
     user: str = Depends(get_current_user)
 ):
-    return crud.get_libros(db)
+    solo_admin(user)
+    return crud.get_libros(db, user)
     """
     Permite listar todos los libros disponibles en la biblioteca.
     - Requiere autenticación
@@ -40,7 +41,8 @@ def listar_libros(
 
 @app.get("/prestamos")
 def listar_prestamos(db: Session = Depends(get_db), user: str = Depends(get_current_user)):
-    return db.query(models.Prestamo).all()
+    solo_admin(user)
+    return crud.get_prestamos(db, user)
     """
     Permite listar todos los préstamos registrados en el sistema.
     - Requiere autenticación
@@ -49,6 +51,7 @@ def listar_prestamos(db: Session = Depends(get_db), user: str = Depends(get_curr
 
 @app.get("/devoluciones")
 def listar_devoluciones(db: Session = Depends(get_db), user: str = Depends(get_current_user)):
+    solo_admin(user)
     return db.query(models.Devolucion).all()
     """
     Permite listar todas las devoluciones registradas en el sistema.
@@ -58,6 +61,7 @@ def listar_devoluciones(db: Session = Depends(get_db), user: str = Depends(get_c
 
 @app.get("/multas")
 def listar_multas(db: Session = Depends(get_db), user: str = Depends(get_current_user)):
+    solo_admin(user)
     return db.query(models.Multa).all()
     """
     Permite listar todas las multas registradas en el sistema.
@@ -67,6 +71,7 @@ def listar_multas(db: Session = Depends(get_db), user: str = Depends(get_current
 
 @app.get("/historial")
 def ver_historial(db: Session = Depends(get_db), user: str = Depends(get_current_user)):
+    solo_admin(user)
     return db.query(models.Historial).all()
     """
     Permite ver el historial de actividades del usuario.
@@ -78,7 +83,8 @@ def ver_historial(db: Session = Depends(get_db), user: str = Depends(get_current
 def crear_libro(
     libro: schemas.LibroBase, 
     db: Session = Depends(get_db), 
-    user: str = Depends(get_current_user)):
+    user= Depends(get_current_user)):
+    solo_admin(user)
     return crud.create_libro(db, libro)
     """
     Permite crear un nuevo libro en el sistema.
@@ -87,8 +93,12 @@ def crear_libro(
     """
 
 @app.post("/prestamos", summary="Registrar préstamo")
-def crear_prestamo(prestamo: schemas.PrestamoBase, db: Session = Depends(get_db), user: str = Depends(get_current_user)):
-    return crud.create_prestamo(db, prestamo)
+def crear_prestamo(
+    prestamo: schemas.PrestamoBase, 
+    db: Session = Depends(get_db), 
+    user: str = Depends(get_current_user)
+    ):
+    return crud.create_prestamo(db, prestamo, user)
     """
     Permite registrar un préstamo de libro.
     - Valida disponibilidad
@@ -130,4 +140,22 @@ def login(
     - Valida credenciales
     - Retorna token de acceso
     """
+@app.get("/admin/usuarios")
+def ver_usuarios(
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    solo_admin(user)
+    return db.query(models.Usuario).all()
 
+@app.get("/admin/prestamos-detalle")
+def ver_prestamos_detalle(
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    solo_admin(user)
+
+    return db.query(models.Prestamo).options(
+        joinedload(models.Prestamo.libro),
+        joinedload(models.Prestamo.usuario)
+    ).all()
