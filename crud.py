@@ -97,7 +97,7 @@ def create_devolucion(db: Session, devolucion: schemas.DevolucionBase):
 
     if dias_retraso > 0:
         multa = models.Multa(
-            id_devolucion=nueva.id_devolucion,
+            id_devolucion=nueva.id_devoluciones,
             monto=dias_retraso * 1000,
             dias_retraso=dias_retraso,
             estado="pendiente"
